@@ -22,7 +22,7 @@ emptyChar = ''
 playerChar = 'X'
 aiChar = 'O'
 
-gameField = [['', '', ''], ['', '', ''], ['', '', '']]
+gameField = [['X', '', ''], ['', '', ''], ['', '', '']]
 gameFieldAnchor = (window_width / 2 - tileSize, window_height / 2 - tileSize)
 
 prevDragPosition = (0, 0)
@@ -33,13 +33,17 @@ selectedTile = (0, 0)
 firstMove = True
 
 
-def extendField(field, anchor, charToFind):
+def extendField(field, charToFind):
+
+    global gameFieldAnchor
+
     # Check upper border
     if charToFind in field[0]:
         border = []
         for element in field[0]:
             border.append('')
         field.insert(0, border)
+        gameFieldAnchor = (gameFieldAnchor[0] - tileSize, gameFieldAnchor[1])
 
     # Check lower border
     if charToFind in field[-1]:
@@ -57,6 +61,7 @@ def extendField(field, anchor, charToFind):
     if not clearLeft:
         for i, _ in enumerate(field):
             field[i].insert(0, '')
+        gameFieldAnchor = (gameFieldAnchor[0], gameFieldAnchor[1] - tileSize)
 
     # Check right border
     clearRight = True
@@ -68,11 +73,23 @@ def extendField(field, anchor, charToFind):
         for i, _ in enumerate(field):
             field[i].append('')
 
+def whichTile(pos):
+    for j, row in enumerate(gameField):
+        for i, tile in enumerate(row):
+                if tile != '' \
+                  and pos[0] >= gameFieldAnchor[0] + offset_x + i * tileSize \
+                  and pos[0] <= gameFieldAnchor[0] + offset_x + (i + 1) * tileSize \
+                  and pos[1] >= gameFieldAnchor[1] + offset_y + j * tileSize \
+                  and pos[1] <= gameFieldAnchor[1] + offset_y + (j + 1) * tileSize:
+                    return (i, j)
+    return False
 
+def isMousePositionValid(pos):
+    return True
 
-print(gameField)
-extendField(gameField, gameFieldAnchor, playerChar)
-print(gameField)
+# Debug code
+extendField(gameField, playerChar)
+
 # Game Loop
 
 running = True
@@ -141,6 +158,8 @@ while running:
             if tile == playerChar:
                 pygame.draw.rect(screen, playerColor, [gameFieldAnchor[0] + offset_x + i * tileSize, gameFieldAnchor[1] + offset_y + i * tileSize, tileSize, tileSize])
 
+
+    pygame.draw.circle(screen, (255, 0, 0), (int(gameFieldAnchor[0] + offset_x), int(gameFieldAnchor[1]) + offset_y), 5)
 
     clock.tick(60)
     pygame.display.flip()
