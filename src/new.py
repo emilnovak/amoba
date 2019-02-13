@@ -22,14 +22,57 @@ emptyChar = ''
 playerChar = 'X'
 aiChar = 'O'
 
-gameField = [['X', '', ''], ['', 'X', ''], ['', '', 'X']]
+gameField = [['', '', ''], ['', '', ''], ['', '', '']]
 gameFieldAnchor = (window_width / 2 - tileSize, window_height / 2 - tileSize)
 
 prevDragPosition = (0, 0)
 selectedTile = (0, 0)
 
-(offset_x, offset_y) = (-tileSize, -tileSize)
+(offset_x, offset_y) = (0, 0)
 
+firstMove = True
+
+
+def extendField(field, anchor, charToFind):
+    # Check upper border
+    if charToFind in field[0]:
+        border = []
+        for element in field[0]:
+            border.append('')
+        field.insert(0, border)
+
+    # Check lower border
+    if charToFind in field[-1]:
+        border = []
+        for element in field[-1]:
+            border.append('')
+        field.append(border)
+
+    # Check left border
+    clearLeft = True
+    for row in field:
+        if row[0] == charToFind:
+            clearLeft = False
+            break
+    if not clearLeft:
+        for i, _ in enumerate(field):
+            field[i].insert(0, '')
+
+    # Check right border
+    clearRight = True
+    for row in field:
+        if row[-1] == charToFind:
+            clearRight = False
+            break
+    if not clearRight:
+        for i, _ in enumerate(field):
+            field[i].append('')
+
+
+
+print(gameField)
+extendField(gameField, gameFieldAnchor, playerChar)
+print(gameField)
 # Game Loop
 
 running = True
@@ -46,21 +89,26 @@ while running:
             if event.key == pygame.K_ESCAPE:
                 pygame.quit()
             if event.key == pygame.K_SPACE:
-                (offset_x, offset_y) = (-tileSize, -tileSize)
+                gameFieldAnchor = (window_width / 2 - tileSize, window_height / 2 - tileSize)
 
         if event.type == pygame.MOUSEBUTTONDOWN:
             mouse_x, mouse_y = event.pos
 
+            if event.button == 1:
+                if firstMove:
+                    firstMove = False
+                    gameFieldAnchor = (event.pos[0] // tileSize * tileSize - tileSize, event.pos[1] // tileSize * tileSize - tileSize)
+                    print('event.pos:', event.pos)
+                    print('gameFieldAnchor', gameFieldAnchor)
+                    gameField[1][1] = playerChar
+
+
             if event.button == 3:
                 prevDragPosition = event.pos
 
-                mouse_x, mouse_y = event.pos
-                # selectedTile = ((mouse_x - offset_x) // tileSize, (mouse_y - offset_y) // tileSize)
-
-
 
         if event.type == pygame.MOUSEMOTION:
-            # print(u'pressed buttons {}, position {} and relative movement {}'.format(event.buttons, event.pos, event.rel))
+            # print(u'pressed buttons {}, position {{}{}} and relative movement {}'.format(event.buttons, event.pos, event.rel))
 
             if event.buttons[2] == 1:
                 (tmp_x, tmp_y) = event.pos
@@ -90,8 +138,8 @@ while running:
     # Render gameField
     for j, row in enumerate(gameField):
         for i, tile in enumerate(row):
-            if tile == 'X':
-                pygame.draw.rect(screen, playerColor, [window_width / 2 + offset_x + i * tileSize, window_height / 2 + offset_y + i * tileSize, tileSize, tileSize])
+            if tile == playerChar:
+                pygame.draw.rect(screen, playerColor, [gameFieldAnchor[0] + offset_x + i * tileSize, gameFieldAnchor[1] + offset_y + i * tileSize, tileSize, tileSize])
 
 
     clock.tick(60)
