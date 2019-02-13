@@ -121,6 +121,7 @@ while running:
                 pygame.quit()
             if event.key == pygame.K_SPACE:
                 gameFieldAnchor = (window_width / 2 - len(gameField[0]) // 2 * tileSize, window_height / 2 - len(gameField) // 2 * tileSize)
+                offset_x, offset_y = 0, 0
             if event.key == pygame.K_q:
                 print("valid tile:", whichTile((mouse_x, mouse_y), True))
 
