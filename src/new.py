@@ -120,7 +120,7 @@ while running:
             if event.key == pygame.K_ESCAPE:
                 pygame.quit()
             if event.key == pygame.K_SPACE:
-                gameFieldAnchor = (window_width / 2 - tileSize, window_height / 2 - tileSize)
+                gameFieldAnchor = (window_width / 2 - len(gameField[0]) // 2 * tileSize, window_height / 2 - len(gameField) // 2 * tileSize)
             if event.key == pygame.K_q:
                 print("valid tile:", whichTile((mouse_x, mouse_y), True))
 
