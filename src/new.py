@@ -2,6 +2,7 @@
 # coding: utf-8
 
 import pygame
+import random
 
 background_colour = (205,211,213)
 playerColor = (154,72,208)
@@ -10,7 +11,7 @@ lineColor = (0, 0, 0)
 
 (window_width, window_height) = (800, 600)
 screen = pygame.display.set_mode((window_width, window_height))
-pygame.display.set_caption('Amőba')
+pygame.display.set_caption('Amőba - Emil')
 screen.fill(background_colour)
 pygame.display.flip()
 
@@ -21,6 +22,9 @@ tileSize = 20
 emptyChar = ''
 playerChar = 'X'
 aiChar = 'O'
+openChar = '#'
+neitherChar = 'N'
+eitherChar = 'E'
 
 gameField = [['', '', ''], ['', '', ''], ['', '', '']]
 gameFieldAnchor = (window_width / 2 - tileSize, window_height / 2 - tileSize)
@@ -101,6 +105,141 @@ def isMousePositionValid(pos):
 
     return False
 
+# Mirror pattern along X and Y axes
+def mixPattern(pattern):
+
+    patterns = []
+    patterns.append(pattern)
+
+    # Mirror about X axis
+    tmpPattern = []
+    for j, row in enumerate(pattern):
+        tmpRow = []
+        for i, tile in enumerate(row):
+            tmpRow.append(pattern[len(pattern)  - 1 - j][i])
+        tmpPattern.append(tmpRow)
+    if tmpPattern not in patterns:
+        patterns.append(tmpPattern)
+
+    # Mirror about Y axis
+    tmpPattern = []
+    for j, row in enumerate(pattern):
+        tmpRow = []
+        for i, tile in enumerate(row):
+            tmpRow.append(pattern[j][len(pattern[0]) - 1 - i])
+        tmpPattern.append(tmpRow)
+    if tmpPattern not in patterns:
+        patterns.append(tmpPattern)
+
+    #Mirror about bot X and Y axes
+    tmpPattern = []
+    for j, row in enumerate(pattern):
+        tmpRow = []
+        for i, tile in enumerate(row):
+            tmpRow.append(pattern[len(pattern)  - 1 - j][len(pattern[0]) - 1 - i])
+        tmpPattern.append(tmpRow)
+    if tmpPattern not in patterns:
+        patterns.append(tmpPattern)
+
+    return patterns
+
+pat1 = [['A', 'B'], ['C', 'D'], ['B', 'F']]
+print(pat1)
+print(mixPattern(pat1))
+
+def findPattern(pattern, field, offset):
+
+    playerNum, aiNum, openNum, neitherNum = 0, 0, 0, 0
+
+    if len(pattern[0]) + offset[0] > len(field[0]):
+        # print('out of bounds x')
+        return (playerNum, aiNum, openNum, neitherNum)
+    if len(pattern) + offset[1] > len(field):
+        # print('out of bounds y')
+        return (playerNum, aiNum, openNum, neitherNum)
+
+    for j, row in enumerate(pattern):
+        for i, tile in enumerate(row):
+            inspectedTile = field[j + offset[1]][i + offset[0]]
+            if tile == openChar and inspectedTile == emptyChar:
+                openNum += 1
+            elif (tile == playerChar or tile == eitherChar) and inspectedTile == playerChar:
+                playerNum += 1
+            elif (tile == aiChar or tile == eitherChar) and inspectedTile == aiChar:
+                aiNum += 1
+            if tile == neitherChar and inspectedTile == emptyChar:
+                neitherNum += 1
+
+    return (playerNum, aiNum, openNum, neitherNum)
+
+patternForPlacig =   [
+                    [['E'], ['N']],
+                    [['E', 'N']],
+                    [['E', ''], ['', 'N']]
+                    ]
+
+
+def aiTurn():
+    global gameField
+
+    validMoves = []
+
+    for j, row in enumerate(gameField):
+        for i, tile in enumerate(row):
+
+            try:
+                if gameField[j][i + 1] != emptyChar:
+                    validMoves.append((i, j))
+            except IndexError:
+                pass
+            try:
+                if gameField[j][i - 1] != emptyChar:
+                    validMoves.append((i, j))
+            except IndexError:
+                pass
+            try:
+                if gameField[j + 1][i + 1] != emptyChar:
+                    validMoves.append((i, j))
+            except IndexError:
+                pass
+            try:
+                if gameField[j + 1][i - 1] != emptyChar:
+                    validMoves.append((i, j))
+            except IndexError:
+                pass
+            try:
+                if gameField[j - 1][i + 1] != emptyChar:
+                    validMoves.append((i, j))
+            except IndexError:
+                pass
+            try:
+                if gameField[j - 1][i - 1] != emptyChar:
+                    validMoves.append((i, j))
+            except IndexError:
+                pass
+            try:
+                if gameField[j + 1][i] != emptyChar:
+                    validMoves.append((i, j))
+            except IndexError:
+                pass
+            try:
+                if gameField[j - 1][i] != emptyChar:
+                    validMoves.append((i, j))
+            except IndexError:
+                pass
+
+    print(validMoves)
+
+
+    if len(validMoves) > 0:
+        print(validMoves)
+        x, y = random.choice(validMoves)
+        gameField[y][x] = aiChar
+    else:
+        print("Error with validMoves being 0!")
+
+    extendField(gameField, aiChar)
+
 # Debug code
 extendField(gameField, playerChar)
 
@@ -132,17 +271,20 @@ while running:
                 if firstMove:
                     firstMove = False
                     gameFieldAnchor = (event.pos[0] // tileSize * tileSize - tileSize, event.pos[1] // tileSize * tileSize - tileSize)
-                    print('event.pos:', event.pos)
-                    print('gameFieldAnchor', gameFieldAnchor)
+                    # print('event.pos:', event.pos)
+                    # print('gameFieldAnchor', gameFieldAnchor)
                     gameField[1][1] = playerChar
+                    aiTurn()
+                    extendField(gameField, aiChar)
 
                 if isMousePositionValid(event.pos):
                     print("valid tile:", whichTile(event.pos, True))
                     (x, y) = whichTile(event.pos, True)
-                    print(gameField)
                     gameField[y][x] = playerChar
-                    print(gameField)
                     extendField(gameField, playerChar)
+                    aiTurn()
+                    extendField(gameField, aiChar)
+
 
 
             if event.button == 3:
@@ -182,8 +324,15 @@ while running:
     # Render gameField
     for j, row in enumerate(gameField):
         for i, tile in enumerate(row):
+            if tile == emptyChar:
+                continue
+
+            tileColor = (0, 0, 0)
             if tile == playerChar:
-                pygame.draw.rect(screen, playerColor, [gameFieldAnchor[0] + offset_x + i * tileSize, gameFieldAnchor[1] + offset_y + j * tileSize, tileSize, tileSize])
+                tileColor = playerColor
+            if tile == aiChar:
+                tileColor == aiColor
+            pygame.draw.rect(screen, tileColor, [gameFieldAnchor[0] + offset_x + i * tileSize, gameFieldAnchor[1] + offset_y + j * tileSize, tileSize, tileSize])
 
 
     pygame.draw.circle(screen, (255, 0, 0), (int(gameFieldAnchor[0] + offset_x), int(gameFieldAnchor[1]) + offset_y), 5)
