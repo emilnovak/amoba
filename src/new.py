@@ -4,10 +4,11 @@
 import pygame
 import random, math, time
 
-background_colour = (205,211,213)
-playerColor = (154,72,208)
-aiColor = (100,100,100)
-lineColor = (0, 0, 0)
+background_colour = (255,248,220)
+playerColor = (32,178,170)
+aiColor = (240,128,128)
+lineColor = (169,169,169)
+textColor = (123,104,238)
 
 (window_width, window_height) = (800, 600)
 screen = pygame.display.set_mode((window_width, window_height))
@@ -16,7 +17,7 @@ screen.fill(background_colour)
 pygame.display.flip()
 
 pygame.font.init()
-gameFont = pygame.font.SysFont('Comic Sans MS', 30)
+gameFont = pygame.font.SysFont(None, 40)
 
 clock = pygame.time.Clock()
 
@@ -173,6 +174,9 @@ def findPattern(pattern, field, offset):
 
 
 def aiTurn():
+    render()
+    time.sleep(0.4)
+
     global gameField
     global winningTiles
 
@@ -257,6 +261,7 @@ def checkIfPlayerHasWon():
 
 def checkIfAiHasWon():
     global aiHasWon
+    global winningTiles
 
     for basePattern in aiWinningPatterns:
         for pattern in mixPattern(basePattern):
@@ -275,7 +280,56 @@ def checkIfAiHasWon():
                         return
 
 
+def render():
+    global screen
 
+    screen.fill(background_colour)
+
+    # Render grid
+    for i in range(0, window_height // tileSize):
+        pygame.draw.line(screen, lineColor, (0, i * tileSize + offset_y % tileSize), (window_width - 1, i * tileSize + offset_y % tileSize))
+    for i in range(0, window_width // tileSize):
+        pygame.draw.line(screen, lineColor, (i * tileSize + offset_x % tileSize, 0), (i * tileSize + offset_x % tileSize, window_height - 1))
+
+    # Test code
+    # pygame.draw.rect(screen, (0, 255, 0), [window_width / 2 + offset_x, window_height / 2 + offset_y, tileSize, tileSize])
+
+    # Render gameField
+    for j, row in enumerate(gameField):
+        for i, tile in enumerate(row):
+            if tile == emptyChar:
+                continue
+
+            tileColor = (0, 0, 0)
+
+            if tile == playerChar:
+                tileColor = playerColor
+            elif tile == aiChar:
+                tileColor = aiColor
+            if (i, j) in winningTiles:
+                if playerHasWon:
+                    playerWonColor = (127 + 127 * math.sin(time.time()*10), 255, 127 + 127 * math.cos(time.time()* 100))
+                    tileColor = playerWonColor
+                if aiHasWon:
+                    aiWonColor = (255, 127 + 127 * math.sin(time.time()*10), 127 + 127 * math.cos(time.time()* 100))
+                    tileColor = aiWonColor
+            pygame.draw.rect(screen, tileColor, [gameFieldAnchor[0] + offset_x + i * tileSize + 1, gameFieldAnchor[1] + offset_y + j * tileSize + 1, tileSize - 1, tileSize - 1])
+
+    message = ""
+    if playerHasWon:
+        message = "You won! Press 'R' to reset!"
+    elif aiHasWon:
+        message = "AI won! Press 'R' to reset!"
+    if playerHasWon or aiHasWon:
+        textsurface = gameFont.render(message, False, (123,104,238))
+        textRect = textsurface.get_rect(center = (window_width / 2, window_height / 8))
+        screen.blit(textsurface, textRect)
+
+    # Debug gameFieldAnchor
+    # pygame.draw.circle(screen, (255, 0, 0), (int(gameFieldAnchor[0] + offset_x), int(gameFieldAnchor[1]) + offset_y), 5)
+
+    clock.tick(60)
+    pygame.display.flip()
 
 def setup():
     global gameField
@@ -394,52 +448,7 @@ def loop():
             if event.type == pygame.MOUSEBUTTONUP:
                 1
 
-
-        # RENDER
-        screen.fill(background_colour)
-
-        # Render grid
-        for i in range(0, window_height // tileSize):
-            pygame.draw.line(screen, lineColor, (0, i * tileSize + offset_y % tileSize), (window_width - 1, i * tileSize + offset_y % tileSize))
-        for i in range(0, window_width // tileSize):
-            pygame.draw.line(screen, lineColor, (i * tileSize + offset_x % tileSize, 0), (i * tileSize + offset_x % tileSize, window_height - 1))
-
-        # Test code
-        # pygame.draw.rect(screen, (0, 255, 0), [window_width / 2 + offset_x, window_height / 2 + offset_y, tileSize, tileSize])
-
-        # Render gameField
-        for j, row in enumerate(gameField):
-            for i, tile in enumerate(row):
-                if tile == emptyChar:
-                    continue
-
-                tileColor = (0, 0, 0)
-
-                if tile == playerChar:
-                    tileColor = playerColor
-                elif tile == aiChar:
-                    tileColor = aiColor
-                if (i, j) in winningTiles:
-                    if playerHasWon:
-                        playerWonColor = (127 + 127 * math.sin(time.time()*10), 255, 127 + 127 * math.cos(time.time()* 100))
-                        tileColor = playerWonColor
-                    if aiHasWon:
-                        aiWonColor = (255, 127 + 127 * math.sin(time.time()*10), 127 + 127 * math.cos(time.time()* 100))
-                        tileColor = aiWonColor
-                pygame.draw.rect(screen, tileColor, [gameFieldAnchor[0] + offset_x + i * tileSize, gameFieldAnchor[1] + offset_y + j * tileSize, tileSize, tileSize])
-
-
-        if playerHasWon:
-            textsurface = gameFont.render("You won! Press 'R' to reset!", False, (80, 80, 80))
-            screen.blit(textsurface,(window_width / 2 - 15 * 8 , window_height / 3))
-        elif aiHasWon:
-            textsurface = gameFont.render("AI won! Press 'R' to reset!", False, (80, 80, 80))
-            screen.blit(textsurface,(window_width / 2 - 15 * 8 , window_height / 3))
-
-        pygame.draw.circle(screen, (255, 0, 0), (int(gameFieldAnchor[0] + offset_x), int(gameFieldAnchor[1]) + offset_y), 5)
-
-        clock.tick(60)
-        pygame.display.flip()
+        render()
 
     pygame.quit()
 
