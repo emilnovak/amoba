@@ -2,12 +2,13 @@
 # coding: utf-8
 
 import pygame
-import random
+import random, math, time
 
 background_colour = (205,211,213)
 playerColor = (154,72,208)
 aiColor = (255,169,135)
 lineColor = (0, 0, 0)
+playerWonColor = (127, 127 + 127 * math.sin(time.time()* 100), 127)
 
 (window_width, window_height) = (800, 600)
 screen = pygame.display.set_mode((window_width, window_height))
@@ -29,6 +30,8 @@ eitherChar = 'E'
 gameField = [['', '', ''], ['', '', ''], ['', '', '']]
 gameFieldAnchor = (window_width / 2 - tileSize, window_height / 2 - tileSize)
 
+winningTiles = []
+
 prevDragPosition = (0, 0)
 selectedTile = (0, 0)
 
@@ -36,6 +39,12 @@ selectedTile = (0, 0)
 mouse_x, mouse_y = 0, 0
 
 firstMove = True
+
+plyerWinningPatterns =  [
+                        [['X', 'X', 'X', 'X', 'X']],
+                        [['X', '', '', '', ''], ['', 'X', '', '', ''], ['', '', 'X', '', ''], ['', '', '', 'X', ''], ['', '', '', '', 'X']],
+                        [['X'], ['X'], ['X'], ['X'], ['X']]
+                        ]
 
 
 def extendField(field, charToFind):
@@ -229,8 +238,28 @@ def aiTurn():
 
     extendField(gameField, aiChar)
 
+def checkIfPlayerHasWon():
+    global playerHasWon
+    global winningTiles
+
+    for basePattern in plyerWinningPatterns:
+        for pattern in mixPattern(basePattern):
+            for j, row in enumerate(gameField):
+                for i, tile in enumerate(row):
+                    playerNum, _, _, _ = findPattern(pattern, gameField, (i, j))
+                    if playerNum >= 5:
+                        print('player has won')
+                        playerHasWon = True
+                        winningTiles = []
+                        for v, v_row in enumerate(pattern):
+                            for u, u_tile in enumerate(v_row):
+                                if u_tile == playerChar:
+                                    winningTiles.append((u + i, j + v))
+                        print(winningTiles)
+
 
 # Game Loop
+playerHasWon = False
 
 running = True
 while running:
@@ -269,6 +298,9 @@ while running:
                     (x, y) = whichTile(event.pos, True)
                     gameField[y][x] = playerChar
                     extendField(gameField, playerChar)
+
+                    checkIfPlayerHasWon()
+
                     aiTurn()
                     extendField(gameField, aiChar)
 
@@ -315,10 +347,14 @@ while running:
                 continue
 
             tileColor = (0, 0, 0)
+            playerWonColor = (127, 127 + 127 * math.sin(time.time()*10), 127)
+
             if tile == playerChar:
                 tileColor = playerColor
             if tile == aiChar:
                 tileColor == aiColor
+            if (i, j) in winningTiles:
+                tileColor = playerWonColor
             pygame.draw.rect(screen, tileColor, [gameFieldAnchor[0] + offset_x + i * tileSize, gameFieldAnchor[1] + offset_y + j * tileSize, tileSize, tileSize])
 
 
