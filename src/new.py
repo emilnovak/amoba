@@ -25,6 +25,7 @@ emptyChar = ''
 playerChar = 'X'
 aiChar = 'O'
 openChar = '#'
+moveChar = '$'
 neitherChar = 'N'
 eitherChar = 'E'
 
@@ -39,6 +40,39 @@ aiWinningPatterns = [
                     [['O', '', '', '', ''], ['', 'O', '', '', ''], ['', '', 'O', '', ''], ['', '', '', 'O', ''], ['', '', '', '', 'O']],
                     [['O'], ['O'], ['O'], ['O'], ['O']]
                     ]
+
+obligatoryPatterns =    [
+                        [['$', 'X', 'X', 'X', 'X']],
+                        [['$'], ['X'], ['X'], ['X'], ['X']],
+                        [['$', '', '', '', ''], ['', 'X', '', '', ''], ['', '', 'X', '', ''], ['', '', '', 'X', ''], ['', '', '', '', 'X']],
+
+                        [['$', 'O', 'O', 'O', 'O']],
+                        [['$'], ['O'], ['O'], ['O'], ['O']],
+                        [['$', '', '', '', ''], ['', 'O', '', '', ''], ['', '', 'O', '', ''], ['', '', '', 'O', ''], ['', '', '', '', 'O']],
+
+                        [['#', 'X', '$', 'X', 'X']],
+                        [['#'], ['X'], ['$'], ['X'], ['X']],
+                        [['#', '', '', '', ''], ['', 'X', '', '', ''], ['', '', '$', '', ''], ['', '', '', 'X', ''], ['', '', '', '', 'X']],
+                        [['#', 'X', 'X', '$', 'X']],
+                        [['#'], ['X'], ['X'], ['$'], ['X']],
+                        [['#', '', '', '', ''], ['', 'X', '', '', ''], ['', '', 'X', '', ''], ['', '', '', '$', ''], ['', '', '', '', 'X']],
+
+                        [['#', 'O', '$', 'O', 'O']],
+                        [['#'], ['O'], ['$'], ['O'], ['O']],
+                        [['#', '', '', '', ''], ['', 'O', '', '', ''], ['', '', '$', '', ''], ['', '', '', 'O', ''], ['', '', '', '', 'O']],
+                        [['#', 'X', 'X', '$', 'X']],
+                        [['#'], ['X'], ['X'], ['$'], ['X']],
+                        [['#', '', '', '', ''], ['', 'O', '', '', ''], ['', '', 'O', '', ''], ['', '', '', '$', ''], ['', '', '', '', 'O']],
+
+                        [['$', 'X', 'X', 'X', '$']],
+                        [['#'], ['X'], ['X'], ['$'], ['X']],
+                        [['#', '', '', '', ''], ['', 'X', '', '', ''], ['', '', 'X', '', ''], ['', '', '', '$', ''], ['', '', '', '', 'X']],
+
+                        [['$', 'O', 'O', 'O', '$']],
+                        [['#'], ['O'], ['O'], ['$'], ['O']],
+                        [['#', '', '', '', ''], ['', 'O', '', '', ''], ['', '', 'O', '', ''], ['', '', '', '$', ''], ['', '', '', '', 'O']]
+
+                        ]
 
 
 
@@ -172,10 +206,55 @@ def findPattern(pattern, field, offset):
 
     return (playerNum, aiNum, openNum, neitherNum)
 
+def checkPattern(patternSet):
+    moves = []
+    # Medium ai
+    for j, row in enumerate(gameField):
+        for i, tile in enumerate(row):
+
+            for basePattern in patternSet:
+                patterns = mixPattern(basePattern)
+                for pattern in patterns:
+
+                    if len(pattern[0]) + i > len(gameField[0]) or len(pattern) + j > len(gameField):
+                        continue
+
+                    matching = True
+                    anchors = []
+
+                    # print('check for pattern: ', pattern)
+
+                    for v, v_row in enumerate(pattern):
+                        for u, u_tile in enumerate(v_row):
+
+                            tile = gameField[j + v][i + u]
+                            tilePos = (i + u, j + v)
+
+                            if u_tile == emptyChar:
+                                continue
+
+                            elif (u_tile == playerChar and tile == playerChar) or (u_tile == aiChar and tile == aiChar):
+                                # print("match found at", (tilePos[0], tilePos[1]))
+                                pass
+
+                            elif u_tile == moveChar and tile == emptyChar:
+                                # print("match found at", (tilePos[0], tilePos[1]))
+                                anchors.append((tilePos[0], tilePos[1]))
+                            elif u_tile == openChar and tile == emptyChar:
+                                    # print("match found at", (tilePos[0], tilePos[1]))
+                                    pass
+                            else:
+                                # print("mismatch found at", (tilePos[0], tilePos[1]))
+                                matching = False
+
+                    if matching and len(anchors) > 0:
+                        moves.append(anchors)
+
+    return moves
 
 def aiTurn():
-    render()
-    time.sleep(0.4)
+    # render()
+    # time.sleep(0.4)
 
     global gameField
     global winningTiles
@@ -229,7 +308,12 @@ def aiTurn():
             except IndexError:
                 pass
 
-    if len(validMoves) > 0:
+    obligatoryMoves = checkPattern(obligatoryPatterns)
+
+    if obligatoryMoves:
+        x, y = random.choice(obligatoryMoves)[0]
+        gameField[y][x] = aiChar
+    elif validMoves:
         x, y = random.choice(validMoves)
         gameField[y][x] = aiChar
     else:
