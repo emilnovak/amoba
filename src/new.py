@@ -143,10 +143,6 @@ def mixPattern(pattern):
 
     return patterns
 
-pat1 = [['A', 'B'], ['C', 'D'], ['B', 'F']]
-print(pat1)
-print(mixPattern(pat1))
-
 def findPattern(pattern, field, offset):
 
     playerNum, aiNum, openNum, neitherNum = 0, 0, 0, 0
@@ -171,12 +167,6 @@ def findPattern(pattern, field, offset):
                 neitherNum += 1
 
     return (playerNum, aiNum, openNum, neitherNum)
-
-patternForPlacig =   [
-                    [['E'], ['N']],
-                    [['E', 'N']],
-                    [['E', ''], ['', 'N']]
-                    ]
 
 
 def aiTurn():
@@ -231,11 +221,7 @@ def aiTurn():
             except IndexError:
                 pass
 
-    print(validMoves)
-
-
     if len(validMoves) > 0:
-        print(validMoves)
         x, y = random.choice(validMoves)
         gameField[y][x] = aiChar
     else:
@@ -243,8 +229,6 @@ def aiTurn():
 
     extendField(gameField, aiChar)
 
-# Debug code
-extendField(gameField, playerChar)
 
 # Game Loop
 
@@ -273,7 +257,7 @@ while running:
 
                 if firstMove:
                     firstMove = False
-                    gameFieldAnchor = (event.pos[0] // tileSize * tileSize - tileSize, event.pos[1] // tileSize * tileSize - tileSize)
+                    gameFieldAnchor = ((event.pos[0] - offset_x) // tileSize * tileSize - tileSize, (event.pos[1] - offset_y) // tileSize * tileSize - tileSize)
                     # print('event.pos:', event.pos)
                     # print('gameFieldAnchor', gameFieldAnchor)
                     gameField[1][1] = playerChar
