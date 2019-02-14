@@ -6,9 +6,8 @@ import random, math, time
 
 background_colour = (205,211,213)
 playerColor = (154,72,208)
-aiColor = (255,169,135)
+aiColor = (100,100,100)
 lineColor = (0, 0, 0)
-playerWonColor = (127, 127 + 127 * math.sin(time.time()* 100), 127)
 
 (window_width, window_height) = (800, 600)
 screen = pygame.display.set_mode((window_width, window_height))
@@ -16,9 +15,10 @@ pygame.display.set_caption('Amőba - Emil')
 screen.fill(background_colour)
 pygame.display.flip()
 
-clock = pygame.time.Clock()
+pygame.font.init()
+gameFont = pygame.font.SysFont('Comic Sans MS', 30)
 
-tileSize = 20
+clock = pygame.time.Clock()
 
 emptyChar = ''
 playerChar = 'X'
@@ -27,24 +27,18 @@ openChar = '#'
 neitherChar = 'N'
 eitherChar = 'E'
 
-gameField = [['', '', ''], ['', '', ''], ['', '', '']]
-gameFieldAnchor = (window_width / 2 - tileSize, window_height / 2 - tileSize)
-
-winningTiles = []
-
-prevDragPosition = (0, 0)
-selectedTile = (0, 0)
-
-(offset_x, offset_y) = (0, 0)
-mouse_x, mouse_y = 0, 0
-
-firstMove = True
-
-plyerWinningPatterns =  [
+playerWinningPatterns = [
                         [['X', 'X', 'X', 'X', 'X']],
                         [['X', '', '', '', ''], ['', 'X', '', '', ''], ['', '', 'X', '', ''], ['', '', '', 'X', ''], ['', '', '', '', 'X']],
                         [['X'], ['X'], ['X'], ['X'], ['X']]
                         ]
+
+aiWinningPatterns = [
+                    [['O', 'O', 'O', 'O', 'O']],
+                    [['O', '', '', '', ''], ['', 'O', '', '', ''], ['', '', 'O', '', ''], ['', '', '', 'O', ''], ['', '', '', '', 'O']],
+                    [['O'], ['O'], ['O'], ['O'], ['O']]
+                    ]
+
 
 
 def extendField(field, charToFind):
@@ -180,6 +174,7 @@ def findPattern(pattern, field, offset):
 
 def aiTurn():
     global gameField
+    global winningTiles
 
     validMoves = []
 
@@ -237,12 +232,14 @@ def aiTurn():
         print("Error with validMoves being 0!")
 
     extendField(gameField, aiChar)
+    checkIfAiHasWon()
+
 
 def checkIfPlayerHasWon():
     global playerHasWon
     global winningTiles
 
-    for basePattern in plyerWinningPatterns:
+    for basePattern in playerWinningPatterns:
         for pattern in mixPattern(basePattern):
             for j, row in enumerate(gameField):
                 for i, tile in enumerate(row):
@@ -256,113 +253,200 @@ def checkIfPlayerHasWon():
                                 if u_tile == playerChar:
                                     winningTiles.append((u + i, j + v))
                         print(winningTiles)
+                        return
 
+def checkIfAiHasWon():
+    global aiHasWon
 
-# Game Loop
-playerHasWon = False
-
-running = True
-while running:
-
-    # EVENTS
-
-    for event in pygame.event.get():
-
-        if event.type == pygame.QUIT:
-            running = False
-
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_ESCAPE:
-                pygame.quit()
-            if event.key == pygame.K_SPACE:
-                gameFieldAnchor = (window_width / 2 - len(gameField[0]) // 2 * tileSize, window_height / 2 - len(gameField) // 2 * tileSize)
-                offset_x, offset_y = 0, 0
-            if event.key == pygame.K_q:
-                print("valid tile:", whichTile((mouse_x, mouse_y), True))
-
-        if event.type == pygame.MOUSEBUTTONDOWN:
-
-            if event.button == 1:
-
-                if firstMove:
-                    firstMove = False
-                    gameFieldAnchor = ((event.pos[0] - offset_x) // tileSize * tileSize - tileSize, (event.pos[1] - offset_y) // tileSize * tileSize - tileSize)
-                    # print('event.pos:', event.pos)
-                    # print('gameFieldAnchor', gameFieldAnchor)
-                    gameField[1][1] = playerChar
-                    aiTurn()
-                    extendField(gameField, aiChar)
-
-                if isMousePositionValid(event.pos):
-                    print("valid tile:", whichTile(event.pos, True))
-                    (x, y) = whichTile(event.pos, True)
-                    gameField[y][x] = playerChar
-                    extendField(gameField, playerChar)
-
-                    checkIfPlayerHasWon()
-
-                    aiTurn()
-                    extendField(gameField, aiChar)
+    for basePattern in aiWinningPatterns:
+        for pattern in mixPattern(basePattern):
+            for j, row in enumerate(gameField):
+                for i, tile in enumerate(row):
+                    _, aiNum, _, _ = findPattern(pattern, gameField, (i, j))
+                    if aiNum >= 5:
+                        print('ai has won')
+                        aiHasWon = True
+                        winningTiles = []
+                        for v, v_row in enumerate(pattern):
+                            for u, u_tile in enumerate(v_row):
+                                if u_tile == aiChar:
+                                    winningTiles.append((u + i, j + v))
+                        print(winningTiles)
+                        return
 
 
 
-            if event.button == 3:
-                prevDragPosition = event.pos
+
+def setup():
+    global gameField
+    global gameFieldAnchor
+    global winningTiles
+    global prevDragPosition
+    global selectedTile
+    global offset_x
+    global offset_y
+    global mouse_x
+    global mouse_y
+    global playerHasWon
+    global aiHasWon
+    global firstMove
+    global tileSize
+
+    tileSize = 20
 
 
-        if event.type == pygame.MOUSEMOTION:
-            # print(u'pressed buttons {}, position {{}{}} and relative movement {}'.format(event.buttons, event.pos, event.rel))
+    gameField = [['', '', ''], ['', '', ''], ['', '', '']]
+    gameFieldAnchor = (window_width / 2 - tileSize, window_height / 2 - tileSize)
+    winningTiles = []
+    winningTiles = []
 
-            mouse_x, mouse_y = event.pos
+    prevDragPosition = (0, 0)
+    selectedTile = (0, 0)
 
-            if event.buttons[2] == 1:
-                (tmp_x, tmp_y) = event.pos
+    (offset_x, offset_y) = (0, 0)
+    mouse_x, mouse_y = 0, 0
 
-                offset_x += tmp_x - prevDragPosition[0]
-                offset_y += tmp_y - prevDragPosition[1]
+    firstMove = True
 
-                prevDragPosition = event.pos
+    playerHasWon = False
+    aiHasWon = False
+
+def loop():
+    global gameField
+    global gameFieldAnchor
+    global winningTiles
+    global prevDragPosition
+    global selectedTile
+    global offset_x
+    global offset_y
+    global mouse_x
+    global mouse_y
+    global playerHasWon
+    global aiHasWon
+    global firstMove
+    global tileSize
+
+    running = True
+    while running:
+
+        # EVENTS
+
+        for event in pygame.event.get():
+
+            if event.type == pygame.QUIT:
+                running = False
+
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    pygame.quit()
+                if event.key == pygame.K_r:
+                    setup()
+                if event.key == pygame.K_SPACE:
+                    gameFieldAnchor = (window_width / 2 - len(gameField[0]) // 2 * tileSize, window_height / 2 - len(gameField) // 2 * tileSize)
+                    offset_x, offset_y = 0, 0
+                if event.key == pygame.K_q:
+                    print("valid tile:", whichTile((mouse_x, mouse_y), True))
+
+            if event.type == pygame.MOUSEBUTTONDOWN:
+
+                if event.button == 1 and not (playerHasWon or aiHasWon):
+
+                    if firstMove:
+                        firstMove = False
+                        gameFieldAnchor = ((event.pos[0] - offset_x) // tileSize * tileSize - tileSize, (event.pos[1] - offset_y) // tileSize * tileSize - tileSize)
+                        # print('event.pos:', event.pos)
+                        # print('gameFieldAnchor', gameFieldAnchor)
+                        gameField[1][1] = playerChar
+                        aiTurn()
+                        extendField(gameField, aiChar)
+
+                    if isMousePositionValid(event.pos):
+                        (x, y) = whichTile(event.pos, True)
+                        gameField[y][x] = playerChar
+                        extendField(gameField, playerChar)
+
+                        checkIfPlayerHasWon()
+
+                        aiTurn()
 
 
-        if event.type == pygame.MOUSEBUTTONUP:
-            1
 
 
-    # RENDER
-    screen.fill(background_colour)
-
-    # Render grid
-    for i in range(0, window_height // tileSize):
-        pygame.draw.line(screen, lineColor, (0, i * tileSize + offset_y % tileSize), (window_width - 1, i * tileSize + offset_y % tileSize))
-    for i in range(0, window_width // tileSize):
-        pygame.draw.line(screen, lineColor, (i * tileSize + offset_x % tileSize, 0), (i * tileSize + offset_x % tileSize, window_height - 1))
-
-    # Test code
-    # pygame.draw.rect(screen, (0, 255, 0), [window_width / 2 + offset_x, window_height / 2 + offset_y, tileSize, tileSize])
-
-    # Render gameField
-    for j, row in enumerate(gameField):
-        for i, tile in enumerate(row):
-            if tile == emptyChar:
-                continue
-
-            tileColor = (0, 0, 0)
-            playerWonColor = (127, 127 + 127 * math.sin(time.time()*10), 127)
-
-            if tile == playerChar:
-                tileColor = playerColor
-            if tile == aiChar:
-                tileColor == aiColor
-            if (i, j) in winningTiles:
-                tileColor = playerWonColor
-            pygame.draw.rect(screen, tileColor, [gameFieldAnchor[0] + offset_x + i * tileSize, gameFieldAnchor[1] + offset_y + j * tileSize, tileSize, tileSize])
+                if event.button == 3:
+                    prevDragPosition = event.pos
 
 
-    pygame.draw.circle(screen, (255, 0, 0), (int(gameFieldAnchor[0] + offset_x), int(gameFieldAnchor[1]) + offset_y), 5)
+            if event.type == pygame.MOUSEMOTION:
+                # print(u'pressed buttons {}, position {{}{}} and relative movement {}'.format(event.buttons, event.pos, event.rel))
 
-    clock.tick(60)
-    pygame.display.flip()
+                mouse_x, mouse_y = event.pos
+
+                if event.buttons[2] == 1:
+                    (tmp_x, tmp_y) = event.pos
+
+                    offset_x += tmp_x - prevDragPosition[0]
+                    offset_y += tmp_y - prevDragPosition[1]
+
+                    prevDragPosition = event.pos
 
 
 
-pygame.quit()
+            if event.type == pygame.MOUSEBUTTONUP:
+                1
+
+
+        # RENDER
+        screen.fill(background_colour)
+
+        # Render grid
+        for i in range(0, window_height // tileSize):
+            pygame.draw.line(screen, lineColor, (0, i * tileSize + offset_y % tileSize), (window_width - 1, i * tileSize + offset_y % tileSize))
+        for i in range(0, window_width // tileSize):
+            pygame.draw.line(screen, lineColor, (i * tileSize + offset_x % tileSize, 0), (i * tileSize + offset_x % tileSize, window_height - 1))
+
+        # Test code
+        # pygame.draw.rect(screen, (0, 255, 0), [window_width / 2 + offset_x, window_height / 2 + offset_y, tileSize, tileSize])
+
+        # Render gameField
+        for j, row in enumerate(gameField):
+            for i, tile in enumerate(row):
+                if tile == emptyChar:
+                    continue
+
+                tileColor = (0, 0, 0)
+
+                if tile == playerChar:
+                    tileColor = playerColor
+                elif tile == aiChar:
+                    tileColor = aiColor
+                if (i, j) in winningTiles:
+                    if playerHasWon:
+                        playerWonColor = (127 + 127 * math.sin(time.time()*10), 255, 127 + 127 * math.cos(time.time()* 100))
+                        tileColor = playerWonColor
+                    if aiHasWon:
+                        aiWonColor = (255, 127 + 127 * math.sin(time.time()*10), 127 + 127 * math.cos(time.time()* 100))
+                        tileColor = aiWonColor
+                pygame.draw.rect(screen, tileColor, [gameFieldAnchor[0] + offset_x + i * tileSize, gameFieldAnchor[1] + offset_y + j * tileSize, tileSize, tileSize])
+
+
+        if playerHasWon:
+            textsurface = gameFont.render("You won! Press 'R' to reset!", False, (80, 80, 80))
+            screen.blit(textsurface,(window_width / 2 - 15 * 8 , window_height / 3))
+        elif aiHasWon:
+            textsurface = gameFont.render("AI won! Press 'R' to reset!", False, (80, 80, 80))
+            screen.blit(textsurface,(window_width / 2 - 15 * 8 , window_height / 3))
+
+        pygame.draw.circle(screen, (255, 0, 0), (int(gameFieldAnchor[0] + offset_x), int(gameFieldAnchor[1]) + offset_y), 5)
+
+        clock.tick(60)
+        pygame.display.flip()
+
+    pygame.quit()
+
+def main():
+    setup()
+    loop()
+
+
+if __name__ == "__main__":
+    main()
