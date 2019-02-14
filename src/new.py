@@ -187,6 +187,9 @@ def aiTurn():
     for j, row in enumerate(gameField):
         for i, tile in enumerate(row):
 
+            if tile != emptyChar:
+                continue
+
             try:
                 if gameField[j][i + 1] != emptyChar:
                     validMoves.append((i, j))
