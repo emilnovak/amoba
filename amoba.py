@@ -255,8 +255,8 @@ def checkPattern(patternSet):
     return moves
 
 def aiTurn():
-    # render()
-    # time.sleep(0.4)
+    render()
+    time.sleep(0.6)
 
     global gameField
     global winningTiles
