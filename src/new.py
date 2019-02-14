@@ -42,35 +42,35 @@ aiWinningPatterns = [
                     ]
 
 obligatoryPatterns =    [
-                        [['$', 'X', 'X', 'X', 'X']],
-                        [['$'], ['X'], ['X'], ['X'], ['X']],
-                        [['$', '', '', '', ''], ['', 'X', '', '', ''], ['', '', 'X', '', ''], ['', '', '', 'X', ''], ['', '', '', '', 'X']],
+                        [[100], [['$', 'X', 'X', 'X', 'X']]],
+                        [[100], [['$'], ['X'], ['X'], ['X'], ['X']]],
+                        [[100], [['$', '', '', '', ''], ['', 'X', '', '', ''], ['', '', 'X', '', ''], ['', '', '', 'X', ''], ['', '', '', '', 'X']]],
 
-                        [['$', 'O', 'O', 'O', 'O']],
-                        [['$'], ['O'], ['O'], ['O'], ['O']],
-                        [['$', '', '', '', ''], ['', 'O', '', '', ''], ['', '', 'O', '', ''], ['', '', '', 'O', ''], ['', '', '', '', 'O']],
+                        [[110], [['$', 'O', 'O', 'O', 'O']]],
+                        [[110], [['$'], ['O'], ['O'], ['O'], ['O']]],
+                        [[110], [['$', '', '', '', ''], ['', 'O', '', '', ''], ['', '', 'O', '', ''], ['', '', '', 'O', ''], ['', '', '', '', 'O']]],
 
-                        [['#', 'X', '$', 'X', 'X']],
-                        [['#'], ['X'], ['$'], ['X'], ['X']],
-                        [['#', '', '', '', ''], ['', 'X', '', '', ''], ['', '', '$', '', ''], ['', '', '', 'X', ''], ['', '', '', '', 'X']],
-                        [['#', 'X', 'X', '$', 'X']],
-                        [['#'], ['X'], ['X'], ['$'], ['X']],
-                        [['#', '', '', '', ''], ['', 'X', '', '', ''], ['', '', 'X', '', ''], ['', '', '', '$', ''], ['', '', '', '', 'X']],
+                        [[90], [['#', 'X', '$', 'X', 'X']]],
+                        [[90], [['#'], ['X'], ['$'], ['X'], ['X']]],
+                        [[90], [['#', '', '', '', ''], ['', 'X', '', '', ''], ['', '', '$', '', ''], ['', '', '', 'X', ''], ['', '', '', '', 'X']]],
+                        [[90], [['#', 'X', 'X', '$', 'X']]],
+                        [[90], [['#'], ['X'], ['X'], ['$'], ['X']]],
+                        [[90], [['#', '', '', '', ''], ['', 'X', '', '', ''], ['', '', 'X', '', ''], ['', '', '', '$', ''], ['', '', '', '', 'X']]],
 
-                        [['#', 'O', '$', 'O', 'O']],
-                        [['#'], ['O'], ['$'], ['O'], ['O']],
-                        [['#', '', '', '', ''], ['', 'O', '', '', ''], ['', '', '$', '', ''], ['', '', '', 'O', ''], ['', '', '', '', 'O']],
-                        [['#', 'X', 'X', '$', 'X']],
-                        [['#'], ['X'], ['X'], ['$'], ['X']],
-                        [['#', '', '', '', ''], ['', 'O', '', '', ''], ['', '', 'O', '', ''], ['', '', '', '$', ''], ['', '', '', '', 'O']],
+                        [[70], [['#', 'O', '$', 'O', 'O']]],
+                        [[70], [['#'], ['O'], ['$'], ['O'], ['O']]],
+                        [[70], [['#', '', '', '', ''], ['', 'O', '', '', ''], ['', '', '$', '', ''], ['', '', '', 'O', ''], ['', '', '', '', 'O']]],
+                        [[70], [['#', 'O', 'O', '$', 'O']]],
+                        [[70], [['#'], ['O'], ['O'], ['$'], ['O']]],
+                        [[70], [['#', '', '', '', ''], ['', 'O', '', '', ''], ['', '', 'O', '', ''], ['', '', '', '$', ''], ['', '', '', '', 'O']]],
 
-                        [['$', 'X', 'X', 'X', '$']],
-                        [['#'], ['X'], ['X'], ['$'], ['X']],
-                        [['#', '', '', '', ''], ['', 'X', '', '', ''], ['', '', 'X', '', ''], ['', '', '', '$', ''], ['', '', '', '', 'X']],
+                        [[80], [['$', 'X', 'X', 'X', '$']]],
+                        [[80], [['#'], ['X'], ['X'], ['X'], ['$']]],
+                        [[80], [['$', '', '', '', ''], ['', 'X', '', '', ''], ['', '', 'X', '', ''], ['', '', '', 'X', ''], ['', '', '', '', '$']]],
 
-                        [['$', 'O', 'O', 'O', '$']],
-                        [['#'], ['O'], ['O'], ['$'], ['O']],
-                        [['#', '', '', '', ''], ['', 'O', '', '', ''], ['', '', 'O', '', ''], ['', '', '', '$', ''], ['', '', '', '', 'O']]
+                        [[70], [['$', 'O', 'O', 'O', '$']]],
+                        [[70], [['$'], ['O'], ['O'], ['O'], ['$']]],
+                        [[70], [['$', '', '', '', ''], ['', 'O', '', '', ''], ['', '', 'O', '', ''], ['', '', '', 'O', ''], ['', '', '', '', '$']]]
 
                         ]
 
@@ -213,7 +213,7 @@ def checkPattern(patternSet):
         for i, tile in enumerate(row):
 
             for basePattern in patternSet:
-                patterns = mixPattern(basePattern)
+                patterns = mixPattern(basePattern[1])
                 for pattern in patterns:
 
                     if len(pattern[0]) + i > len(gameField[0]) or len(pattern) + j > len(gameField):
@@ -239,7 +239,7 @@ def checkPattern(patternSet):
 
                             elif u_tile == moveChar and tile == emptyChar:
                                 # print("match found at", (tilePos[0], tilePos[1]))
-                                anchors.append((tilePos[0], tilePos[1]))
+                                anchors.append([basePattern[0], [tilePos[0], tilePos[1]]])
                             elif u_tile == openChar and tile == emptyChar:
                                     # print("match found at", (tilePos[0], tilePos[1]))
                                     pass
@@ -250,6 +250,8 @@ def checkPattern(patternSet):
                     if matching and len(anchors) > 0:
                         moves.append(anchors)
 
+    if moves:
+        return moves[0]
     return moves
 
 def aiTurn():
@@ -258,6 +260,8 @@ def aiTurn():
 
     global gameField
     global winningTiles
+
+    extendField(gameField, playerChar)
 
     validMoves = []
 
@@ -311,7 +315,8 @@ def aiTurn():
     obligatoryMoves = checkPattern(obligatoryPatterns)
 
     if obligatoryMoves:
-        x, y = random.choice(obligatoryMoves)[0]
+        print(obligatoryMoves)
+        x, y = obligatoryMoves[obligatoryMoves[0][0].index(max(obligatoryMoves[0][:][0]))][1]
         gameField[y][x] = aiChar
     elif validMoves:
         x, y = random.choice(validMoves)
@@ -324,6 +329,8 @@ def aiTurn():
 
 
 def checkIfPlayerHasWon():
+    if aiHasWon:
+        return False
     global playerHasWon
     global winningTiles
 
@@ -344,6 +351,8 @@ def checkIfPlayerHasWon():
                         return
 
 def checkIfAiHasWon():
+    if playerHasWon:
+        return False
     global aiHasWon
     global winningTiles
 
