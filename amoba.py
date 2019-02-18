@@ -4,6 +4,8 @@
 import pygame
 import random, math, time
 
+# import minimax
+
 background_colour = (255,248,220)
 playerColor = (32,178,170)
 aiColor = (240,128,128)
@@ -71,9 +73,30 @@ obligatoryPatterns =    [
                         [[70], [['$', 'O', 'O', 'O', '$']]],
                         [[70], [['$'], ['O'], ['O'], ['O'], ['$']]],
                         [[70], [['$', '', '', '', ''], ['', 'O', '', '', ''], ['', '', 'O', '', ''], ['', '', '', 'O', ''], ['', '', '', '', '$']]]
-
                         ]
 
+'''evaluationPatterns = [
+                        [[math.inf], [['A', 'A', 'A', 'A', 'A']]],
+                        [[math.inf], [['A'], ['A'], ['A'], ['A'], ['A']]],
+                        [[math.inf], [['A', '', '', '', ''], ['', 'A', '', '', ''], ['', '', 'A', '', ''], ['', '', '', 'A', ''], ['', '', '', '', 'A']]],
+
+                        [[1000], [['#', 'A', 'A', 'A', 'A']]],
+                        [[1000], [['#'], ['A'], ['A'], ['A'], ['A']]],
+                        [[1000], [['#', '', '', '', ''], ['', 'A', '', '', ''], ['', '', 'A', '', ''], ['', '', '', 'A', ''], ['', '', '', '', 'A']]],
+
+                        [[700], [['#', 'A', '#', 'A', 'A']]],
+                        [[700], [['#'], ['A'], ['#'], ['A'], ['A']]],
+                        [[700], [['#', '', '', '', ''], ['', 'A', '', '', ''], ['', '', '#', '', ''], ['', '', '', 'A', ''], ['', '', '', '', 'A']]],
+                        [[700], [['#', 'A', 'A', '#', 'A']]],
+                        [[700], [['#'], ['A'], ['A'], ['#'], ['A']]],
+                        [[700], [['#', '', '', '', ''], ['', 'A', '', '', ''], ['', '', 'A', '', ''], ['', '', '', '#', ''], ['', '', '', '', 'A']]],
+
+                        [[500], [['#', 'A', 'A', 'A', '#']]],
+                        [[500], [['#'], ['A'], ['A'], ['A'], ['#']]],
+                        [[500], [['#', '', '', '', ''], ['', 'A', '', '', ''], ['', '', 'A', '', ''], ['', '', '', 'A', ''], ['', '', '', '', '#']]],
+                    ]
+'''
+evaluationPatterns = [[[100], [['A'], ['#'], ['A']]]]
 
 
 def extendField(field, charToFind):
@@ -116,6 +139,7 @@ def extendField(field, charToFind):
         for i, _ in enumerate(field):
             field[i].append('')
 
+# Gives back tile array values from screen position
 def whichTile(pos, inclusive = False):
     for j, row in enumerate(gameField):
         for i, tile in enumerate(row):
@@ -180,6 +204,64 @@ def mixPattern(pattern):
         patterns.append(tmpPattern)
 
     return patterns
+
+def getFieldEvaluation(field, maximizingPlayer):
+
+    print("----getFieldEvaluation----")
+    print('maximizingPlayer:', maximizingPlayer)
+
+    if maximizingPlayer:
+        charToChek = aiChar
+    else:
+        charToChek = playerChar
+
+    print('charToChek:', charToChek)
+
+    eval = 0
+
+    for j, row in enumerate(field):
+        for i, fieldTile in enumerate(row):
+            for pattern in evaluationPatterns:
+
+                if len(pattern[1][0]) + i > len(field[0]):
+                    # print('out of bounds x')
+                    continue
+
+                if len(pattern[1]) + j > len(field):
+                    # print('out of bounds y')
+                    continue
+
+                matching = True
+                for v, v_row in enumerate(pattern[1]):
+
+                    if matching == False:
+                        break
+
+                    for u, patternTile in enumerate(v_row):
+                        if matching == False:
+                            break
+                        if patternTile == 'A' and field[j + v][i + u] == charToChek:
+                            continue
+                        if patternTile == '#' and (field[j + v][i + u] == '' or field[j + v][i + u] == charToChek):
+                            continue
+
+                        matching = False
+
+                if matching == True:
+                    print('pattern[0][0]:', pattern[0][0])
+                    tmpVal = pattern[0][0]
+                    print('type(tmpVal):', type(tmpVal))
+
+                    if maximizingPlayer:
+                        eval += tmpVal
+                    else:
+                        eval -= tmpVal
+
+                    print('found pattern:', pattern[1])
+                    print('(i, j):', (i, j))
+
+    print('--> evaluation:', eval)
+
 
 def findPattern(pattern, field, offset):
 
@@ -254,6 +336,59 @@ def checkPattern(patternSet):
         return moves[0]
     return moves
 
+def getValidMoves(field):
+    validMoves = []
+
+    for j, row in enumerate(field):
+        for i, tile in enumerate(row):
+
+            if tile != emptyChar:
+                continue
+
+            try:
+                if field[j][i + 1] != emptyChar:
+                    validMoves.append((i, j))
+            except IndexError:
+                pass
+            try:
+                if field[j][i - 1] != emptyChar:
+                    validMoves.append((i, j))
+            except IndexError:
+                pass
+            try:
+                if field[j + 1][i + 1] != emptyChar:
+                    validMoves.append((i, j))
+            except IndexError:
+                pass
+            try:
+                if field[j + 1][i - 1] != emptyChar:
+                    validMoves.append((i, j))
+            except IndexError:
+                pass
+            try:
+                if field[j - 1][i + 1] != emptyChar:
+                    validMoves.append((i, j))
+            except IndexError:
+                pass
+            try:
+                if field[j - 1][i - 1] != emptyChar:
+                    validMoves.append((i, j))
+            except IndexError:
+                pass
+            try:
+                if field[j + 1][i] != emptyChar:
+                    validMoves.append((i, j))
+            except IndexError:
+                pass
+            try:
+                if field[j - 1][i] != emptyChar:
+                    validMoves.append((i, j))
+            except IndexError:
+                pass
+
+    return validMoves
+
+
 def aiTurn():
     render()
     time.sleep(0.6)
@@ -261,56 +396,11 @@ def aiTurn():
     global gameField
     global winningTiles
 
+    getFieldEvaluation(gameField, False)
+
     extendField(gameField, playerChar)
 
-    validMoves = []
-
-    for j, row in enumerate(gameField):
-        for i, tile in enumerate(row):
-
-            if tile != emptyChar:
-                continue
-
-            try:
-                if gameField[j][i + 1] != emptyChar:
-                    validMoves.append((i, j))
-            except IndexError:
-                pass
-            try:
-                if gameField[j][i - 1] != emptyChar:
-                    validMoves.append((i, j))
-            except IndexError:
-                pass
-            try:
-                if gameField[j + 1][i + 1] != emptyChar:
-                    validMoves.append((i, j))
-            except IndexError:
-                pass
-            try:
-                if gameField[j + 1][i - 1] != emptyChar:
-                    validMoves.append((i, j))
-            except IndexError:
-                pass
-            try:
-                if gameField[j - 1][i + 1] != emptyChar:
-                    validMoves.append((i, j))
-            except IndexError:
-                pass
-            try:
-                if gameField[j - 1][i - 1] != emptyChar:
-                    validMoves.append((i, j))
-            except IndexError:
-                pass
-            try:
-                if gameField[j + 1][i] != emptyChar:
-                    validMoves.append((i, j))
-            except IndexError:
-                pass
-            try:
-                if gameField[j - 1][i] != emptyChar:
-                    validMoves.append((i, j))
-            except IndexError:
-                pass
+    validMoves = getValidMoves(gameField)
 
     obligatoryMoves = checkPattern(obligatoryPatterns)
 
@@ -419,7 +509,7 @@ def render():
         screen.blit(textsurface, textRect)
 
     # Debug gameFieldAnchor
-    # pygame.draw.circle(screen, (255, 0, 0), (int(gameFieldAnchor[0] + offset_x), int(gameFieldAnchor[1]) + offset_y), 5)
+    pygame.draw.circle(screen, (255, 0, 0), (int(gameFieldAnchor[0] + offset_x), int(gameFieldAnchor[1]) + offset_y), 5)
 
     clock.tick(60)
     pygame.display.flip()
