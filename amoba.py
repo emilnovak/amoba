@@ -3,8 +3,7 @@
 
 import pygame
 import random, math, time
-
-# import minimax
+from copy import deepcopy
 
 background_colour = (255,248,220)
 playerColor = (32,178,170)
@@ -48,9 +47,9 @@ obligatoryPatterns =    [
                         [[100], [['$'], ['X'], ['X'], ['X'], ['X']]],
                         [[100], [['$', '', '', '', ''], ['', 'X', '', '', ''], ['', '', 'X', '', ''], ['', '', '', 'X', ''], ['', '', '', '', 'X']]],
 
-                        [[110], [['$', 'O', 'O', 'O', 'O']]],
-                        [[110], [['$'], ['O'], ['O'], ['O'], ['O']]],
-                        [[110], [['$', '', '', '', ''], ['', 'O', '', '', ''], ['', '', 'O', '', ''], ['', '', '', 'O', ''], ['', '', '', '', 'O']]],
+                        [[95], [['$', 'O', 'O', 'O', 'O']]],
+                        [[95], [['$'], ['O'], ['O'], ['O'], ['O']]],
+                        [[95], [['$', '', '', '', ''], ['', 'O', '', '', ''], ['', '', 'O', '', ''], ['', '', '', 'O', ''], ['', '', '', '', 'O']]],
 
                         [[90], [['#', 'X', '$', 'X', 'X']]],
                         [[90], [['#'], ['X'], ['$'], ['X'], ['X']]],
@@ -72,10 +71,24 @@ obligatoryPatterns =    [
 
                         [[70], [['$', 'O', 'O', 'O', '$']]],
                         [[70], [['$'], ['O'], ['O'], ['O'], ['$']]],
-                        [[70], [['$', '', '', '', ''], ['', 'O', '', '', ''], ['', '', 'O', '', ''], ['', '', '', 'O', ''], ['', '', '', '', '$']]]
+                        [[70], [['$', '', '', '', ''], ['', 'O', '', '', ''], ['', '', 'O', '', ''], ['', '', '', 'O', ''], ['', '', '', '', '$']]],
+
+                        [[80], [['', '#', '', '', ''], ['', 'X', '', '', ''], ['', 'X', '', '', ''], ['#', '$', 'X', 'X', '#'], ['', '#', '', '', '']]],
+                        [[80], [['', '', '#', '', '#', '', ''], ['', '', '', '$', '', '', ''], ['', '', 'X', '', 'X', '', ''], ['', 'X', '', '', '', 'X', ''], ['X', '', '', '', '', '', 'X']]],
+
+                        [[75], [['', '#', '', '', ''], ['', 'O', '', '', ''], ['', 'O', '', '', ''], ['#', '$', 'O', 'O', '#'], ['', '#', '', '', '']]],
+                        [[75], [['', '', '#', '', '#', '', ''], ['', '', '', '$', '', '', ''], ['', '', 'O', '', 'O', '', ''], ['', 'O', '', '', '', 'O', ''], ['O', '', '', '', '', '', 'O']]],
+
+                        [[80], [['', '', '', '#', ''], ['', '', '', 'X', '#'], ['', '', '', '$', ''], ['', '', 'X', 'X', ''], ['', 'X', '', '#', ''], ['#', '', '', '', '']]],
+                        [[80], [['#', '', '', '', '', ''], ['', 'X', '', '', '', ''], ['', '', 'X', '', '', ''], ['', '#', 'X', '$', 'X', '#'], ['', '', '', '', '#', '']]],
+
+                        [[75], [['', '', '', '#', ''], ['', '', '', 'O', '#'], ['', '', '', '$', ''], ['', '', 'O', 'O', ''], ['', 'O', '', '#', ''], ['#', '', '', '', '']]],
+                        [[75], [['#', '', '', '', '', ''], ['', 'O', '', '', '', ''], ['', '', 'O', '', '', ''], ['', '#', 'O', '$', 'O', '#'], ['', '', '', '', '#', '']]],
+
+
                         ]
 
-'''evaluationPatterns = [
+evaluationPatterns = [
                         [[math.inf], [['A', 'A', 'A', 'A', 'A']]],
                         [[math.inf], [['A'], ['A'], ['A'], ['A'], ['A']]],
                         [[math.inf], [['A', '', '', '', ''], ['', 'A', '', '', ''], ['', '', 'A', '', ''], ['', '', '', 'A', ''], ['', '', '', '', 'A']]],
@@ -95,11 +108,52 @@ obligatoryPatterns =    [
                         [[500], [['#'], ['A'], ['A'], ['A'], ['#']]],
                         [[500], [['#', '', '', '', ''], ['', 'A', '', '', ''], ['', '', 'A', '', ''], ['', '', '', 'A', ''], ['', '', '', '', '#']]],
                     ]
-'''
-evaluationPatterns = [[[100], [['A'], ['#'], ['A']]]]
 
+# test: evaluationPatterns = [[[100], [['A'], ['#'], ['A']]]]
+
+gameOverPatterns =  [
+                        [['A', 'A', 'A', 'A', 'A']],
+                        [['A', '', '', '', ''], ['', 'A', '', '', ''], ['', '', 'A', '', ''], ['', '', '', 'A', ''], ['', '', '', '', 'A']],
+                        [['A'], ['A'], ['A'], ['A'], ['A']]
+                    ]
 
 def extendField(field, charToFind):
+    # Check upper border
+    if charToFind in field[0]:
+        border = []
+        for element in field[0]:
+            border.append('')
+        field.insert(0, border)
+
+    # Check lower border
+    if charToFind in field[-1]:
+        border = []
+        for element in field[-1]:
+            border.append('')
+        field.append(border)
+
+    # Check left border
+    clearLeft = True
+    for row in field:
+        if row[0] == charToFind:
+            clearLeft = False
+            break
+    if not clearLeft:
+        for i, _ in enumerate(field):
+            field[i].insert(0, '')
+
+    # Check right border
+    clearRight = True
+    for row in field:
+        if row[-1] == charToFind:
+            clearRight = False
+            break
+    if not clearRight:
+        for i, _ in enumerate(field):
+            field[i].append('')
+
+
+def extendGameField(field, charToFind):
 
     global gameFieldAnchor
 
@@ -205,62 +259,106 @@ def mixPattern(pattern):
 
     return patterns
 
+def checkGameOver(field, character):
+    for j, row in enumerate(field):
+        for i, fieldTile in enumerate(row):
+            for basePattern in gameOverPatterns:
+                # print('basePattern:', basePattern)
+                for pattern in mixPattern(basePattern):
+                    # print('pattern:', pattern)
+
+                    if len(pattern[0]) + i > len(field[0]):
+                        # print('out of bounds x')
+                        continue
+
+                    if len(pattern) + j > len(field):
+                        # print('out of bounds y')
+                        continue
+
+                    matching = True
+                    for v, v_row in enumerate(pattern):
+
+                        if matching == False:
+                            break
+
+                        for u, patternTile in enumerate(v_row):
+
+                            if matching == False:
+                                break
+
+                            if patternTile == 'A' and field[j + v][i + u] == character:
+                                continue
+
+                            matching = False
+
+                    if matching:
+                        return True
+    return False
+
+
+
 def getFieldEvaluation(field, maximizingPlayer):
 
-    print("----getFieldEvaluation----")
-    print('maximizingPlayer:', maximizingPlayer)
+    # print("----getFieldEvaluation----")
+    # print('maximizingPlayer:', maximizingPlayer)
 
     if maximizingPlayer:
         charToChek = aiChar
     else:
         charToChek = playerChar
 
-    print('charToChek:', charToChek)
+    # print('charToChek:', charToChek)
 
     eval = 0
 
+    # print('field:', field)
+
     for j, row in enumerate(field):
         for i, fieldTile in enumerate(row):
-            for pattern in evaluationPatterns:
+            for basePattern in evaluationPatterns:
+                # print('basePattern:', basePattern)
+                for pattern in mixPattern(basePattern[1]):
+                    # print('pattern:', pattern)
 
-                if len(pattern[1][0]) + i > len(field[0]):
-                    # print('out of bounds x')
-                    continue
+                    if len(pattern[0]) + i > len(field[0]):
+                        # print('out of bounds x')
+                        continue
 
-                if len(pattern[1]) + j > len(field):
-                    # print('out of bounds y')
-                    continue
+                    if len(pattern) + j > len(field):
+                        # print('out of bounds y')
+                        continue
 
-                matching = True
-                for v, v_row in enumerate(pattern[1]):
+                    matching = True
+                    for v, v_row in enumerate(pattern):
 
-                    if matching == False:
-                        break
-
-                    for u, patternTile in enumerate(v_row):
                         if matching == False:
                             break
-                        if patternTile == 'A' and field[j + v][i + u] == charToChek:
-                            continue
-                        if patternTile == '#' and (field[j + v][i + u] == '' or field[j + v][i + u] == charToChek):
-                            continue
 
-                        matching = False
+                        for u, patternTile in enumerate(v_row):
 
-                if matching == True:
-                    print('pattern[0][0]:', pattern[0][0])
-                    tmpVal = pattern[0][0]
-                    print('type(tmpVal):', type(tmpVal))
+                            if matching == False:
+                                break
 
-                    if maximizingPlayer:
-                        eval += tmpVal
-                    else:
-                        eval -= tmpVal
+                            if patternTile == 'A' and field[j + v][i + u] == charToChek:
+                                continue
 
-                    print('found pattern:', pattern[1])
-                    print('(i, j):', (i, j))
+                            if patternTile == '#' and (field[j + v][i + u] == '' or field[j + v][i + u] == charToChek):
+                                continue
 
-    print('--> evaluation:', eval)
+                            matching = False
+
+                    if matching == True:
+
+                        if maximizingPlayer:
+                            eval += basePattern[0][0]
+                        else:
+                            eval -= basePattern[0][0]
+
+                        # print('found pattern:', pattern)
+                        # print('(i, j):', (i, j))
+
+    # print('--> evaluation:', eval)
+    return eval
 
 
 def findPattern(pattern, field, offset):
@@ -322,7 +420,7 @@ def checkPattern(patternSet):
                             elif u_tile == moveChar and tile == emptyChar:
                                 # print("match found at", (tilePos[0], tilePos[1]))
                                 anchors.append([basePattern[0], [tilePos[0], tilePos[1]]])
-                            elif u_tile == openChar and tile == emptyChar:
+                            elif u_tile == openChar and (tile == emptyChar or tile == playerChar):
                                     # print("match found at", (tilePos[0], tilePos[1]))
                                     pass
                             else:
@@ -335,6 +433,53 @@ def checkPattern(patternSet):
     if moves:
         return moves[0]
     return moves
+
+def getValidMovesFrom(field, currentPosition):
+    validMoves = []
+    (i, j) = currentPosition
+
+    try:
+        if field[j][i + 1] != emptyChar:
+            validMoves.append((i, j))
+    except IndexError:
+        pass
+    try:
+        if field[j][i - 1] != emptyChar:
+            validMoves.append((i, j))
+    except IndexError:
+        pass
+    try:
+        if field[j + 1][i + 1] != emptyChar:
+            validMoves.append((i, j))
+    except IndexError:
+        pass
+    try:
+        if field[j + 1][i - 1] != emptyChar:
+            validMoves.append((i, j))
+    except IndexError:
+        pass
+    try:
+        if field[j - 1][i + 1] != emptyChar:
+            validMoves.append((i, j))
+    except IndexError:
+        pass
+    try:
+        if field[j - 1][i - 1] != emptyChar:
+            validMoves.append((i, j))
+    except IndexError:
+        pass
+    try:
+        if field[j + 1][i] != emptyChar:
+            validMoves.append((i, j))
+    except IndexError:
+        pass
+    try:
+        if field[j - 1][i] != emptyChar:
+            validMoves.append((i, j))
+    except IndexError:
+        pass
+
+    return validMoves
 
 def getValidMoves(field):
     validMoves = []
@@ -389,18 +534,73 @@ def getValidMoves(field):
     return validMoves
 
 
+def minimax(position, field, depth,  maximizingPlayer, alpha = -math.inf, beta = math.inf):
+
+    if depth == 0 or checkGameOver(field, aiChar) or checkGameOver(field, playerChar):
+
+        maxiEval = getFieldEvaluation(field, True)
+        miniEval = getFieldEvaluation(field, False)
+
+        if miniEval == -math.inf:
+            return miniEval
+
+        return (maxiEval - miniEval)
+
+    if maximizingPlayer:
+        maxEval = -math.inf
+        for move in getValidMoves(field):
+
+            extendedField = deepcopy(field)
+            extendedField[move[1]][move[0]] = aiChar
+            extendField(extendedField, aiChar)
+
+            eval = minimax(move, extendedField, depth - 1, False, alpha, beta)
+            maxEval = max(maxEval, eval)
+            alpha = max(alpha, eval)
+            if beta <= alpha:
+                break
+        return maxEval
+    else:
+        minEval = math.inf
+        for move in getValidMoves(field):
+
+            extendedField = deepcopy(field)
+            extendedField[move[1]][move[0]] = playerChar
+            extendField(extendedField, playerChar)
+
+            eval = minimax(move, extendedField, depth - 1, True, alpha, beta)
+            minEval = min(beta, eval)
+            if beta <= alpha:
+                break
+        return minEval
+
+
 def aiTurn():
     render()
-    time.sleep(0.6)
+    time.sleep(0.4)
 
     global gameField
     global winningTiles
 
-    getFieldEvaluation(gameField, False)
+    # getFieldEvaluation(gameField, False)
 
-    extendField(gameField, playerChar)
+    extendGameField(gameField, playerChar)
 
     validMoves = getValidMoves(gameField)
+
+    # FIXME: Performance Issues, probably some bug
+    '''
+    predictedPointsForMoves = []
+    for move in validMoves:
+        predictedPointsForMoves.append(minimax(move, gameField, 2, True))
+
+    bestIndex = max(range(len(predictedPointsForMoves)), key = lambda i: predictedPointsForMoves[i])
+    print('Best possibility:', predictedPointsForMoves[bestIndex])
+
+    gameField[validMoves[bestIndex][1]][validMoves[bestIndex][0]] = aiChar
+    '''
+
+    # NORMAL AI
 
     obligatoryMoves = checkPattern(obligatoryPatterns)
 
@@ -414,9 +614,9 @@ def aiTurn():
     else:
         print("Error with validMoves being 0!")
 
-    extendField(gameField, aiChar)
-    checkIfAiHasWon()
 
+    extendGameField(gameField, aiChar)
+    checkIfAiHasWon()
 
 def checkIfPlayerHasWon():
     if aiHasWon:
@@ -509,7 +709,7 @@ def render():
         screen.blit(textsurface, textRect)
 
     # Debug gameFieldAnchor
-    pygame.draw.circle(screen, (255, 0, 0), (int(gameFieldAnchor[0] + offset_x), int(gameFieldAnchor[1]) + offset_y), 5)
+    # pygame.draw.circle(screen, (255, 0, 0), (int(gameFieldAnchor[0] + offset_x), int(gameFieldAnchor[1]) + offset_y), 5)
 
     clock.tick(60)
     pygame.display.flip()
@@ -595,12 +795,12 @@ def loop():
                         # print('gameFieldAnchor', gameFieldAnchor)
                         gameField[1][1] = playerChar
                         aiTurn()
-                        extendField(gameField, aiChar)
+                        extendGameField(gameField, aiChar)
 
                     if isMousePositionValid(event.pos):
                         (x, y) = whichTile(event.pos, True)
                         gameField[y][x] = playerChar
-                        extendField(gameField, playerChar)
+                        extendGameField(gameField, playerChar)
 
                         checkIfPlayerHasWon()
 
